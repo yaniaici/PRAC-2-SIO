@@ -4,57 +4,53 @@ import matplotlib.pyplot as plt
 
 cursor = connection.connection.cursor()
 
-streamingAction = querys.streamingAction()
 streamingType = querys.streamingType()
-topActors = querys.topActors()
+distribuitonStreaming = querys.distributionStreamings()
+countryTitles = querys.countryTitles()
+personActorDirector = querys.personActorDirector()
+streamingRuntimeMovie = querys.streamingRuntimeMovie()
+streamingRuntimeShow = querys.streamingRuntimeShow()
+streamingValues = querys.streamingMostValue()
+bestMovieDecade = querys.bestMovieByDecade()
+bestDecade = querys.bestDecade()
+distributionGenreStreaming = querys.distributionGenreStreaming()
+scorePopularity = querys.scorePopularity()
+scoreRuntime = querys.scoreRuntime()
+scoreYear = querys.scoreYear()
+correlacionScores = querys.correlacionScores()
+genreScore = querys.genreScore()
+genreRestriction = querys.genreRestricted()
+countryShows = querys.countryShows()
+countryMovies = querys.countryMovies()
+streamingCountry = querys.streamingCountry()
+genreYear = querys.genreYear()
 
-cursor.execute(streamingAction)
+cursor.execute(distributionGenreStreaming)
 results = cursor.fetchall()
 
 for row in results:
+    #print(row)
     x = [row[0] for row in results]
     y = [row[1] for row in results]
+    z_decimal = [row[2] for row in results]
+    z = [float(i) for i in z_decimal]
 
-#Grafica de barras
-plt.title('Content Count by Streaming Platform for Action Genre')
-plt.xlabel('Streaming Platform')
-plt.ylabel('Content Count')
-plt.bar(x, y)
-#plt.show()
-
-cursor.execute(streamingType)
+cursor.execute(genreYear)
 results = cursor.fetchall()
 
 for row in results:
-    x = [row[0] for row in results]
-    y = [row[1] for row in results]
-    z = [row[2] for row in results]
+    #print(row)
+    x = [row[1] for row in results]
+    y = [row[2] for row in results]
+    z = [row[3] for row in results]
 
-# Create a bar plot with custom width for each bar
-bar_width = 0.35  # Adjust width as needed
-index = range(len(x))  # Define x-axis positions
+fig, ax = plt.subplots()
+scatter = ax.scatter(x, y, z)
+ax.set_xlabel('Year')
+ax.set_ylabel('Genre')
+ax.set_title('Distribution of genres by year')
+plt.show()
 
-# Create bars for series and movies with different positions
-plt.bar(index, y, bar_width, label='Shows')
-plt.bar([p + bar_width for p in index], z, bar_width, label='Movies')
 
-# Set labels and title
-plt.xlabel('Streaming Platform')
-plt.ylabel('Content Count')
-plt.title('Distribution of Shows and Movies on Streaming Platforms')
 
-# Add labels and legend
-plt.xticks([i + bar_width / 2 for i in index], x, rotation=45)  # Rotate x-axis labels for readability
-plt.legend()
 
-# Show the graph
-plt.tight_layout()
-#plt.show()
-
-cursor.execute(topActors)
-results = cursor.fetchall()
-
-for row in results:
-    print(row)
-    #x = [row[0] for row in results]
-    #y = [row[1] for row in results]
