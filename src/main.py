@@ -1,6 +1,7 @@
 import connection
 import querys
 import matplotlib.pyplot as plt
+import numpy as np
 
 cursor = connection.connection.cursor()
 
@@ -24,33 +25,19 @@ countryShows = querys.countryShows()
 countryMovies = querys.countryMovies()
 streamingCountry = querys.streamingCountry()
 genreYear = querys.genreYear()
+typePopularity = querys.typePopularity()
+genrePopularityMovie = querys.genrePopularityMovie()
+genrePopularityShow = querys.genrePopularityShow()
+yearPopularity = querys.yearPopularity()
+runtimePopularity = querys.runtimePopularity()
+yearRuntime = querys.yearRuntime()
+yearStreaming = querys.yearStreaming()
+probGenreScore = querys.probGenreScore()
+bestDecadeMovie = querys.bestDecadeMovie()
+genreScorePopularity = querys.genreScorePopularity()
+genreRestricted = querys.genreRestrictedQuantity()
+countryStreamingQuantity = querys.countryStreamingQuantity()
+moviesShows = querys.moviesShows()
 
 cursor.execute(distributionGenreStreaming)
 results = cursor.fetchall()
-
-for row in results:
-    #print(row)
-    x = [row[0] for row in results]
-    y = [row[1] for row in results]
-    z_decimal = [row[2] for row in results]
-    z = [float(i) for i in z_decimal]
-
-cursor.execute(genreYear)
-results = cursor.fetchall()
-
-for row in results:
-    #print(row)
-    x = [row[1] for row in results]
-    y = [row[2] for row in results]
-    z = [row[3] for row in results]
-
-fig, ax = plt.subplots()
-scatter = ax.scatter(x, y, z)
-ax.set_xlabel('Year')
-ax.set_ylabel('Genre')
-ax.set_title('Distribution of genres by year')
-plt.show()
-
-
-
-

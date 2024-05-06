@@ -300,7 +300,25 @@ def countryShows():
     query = """
     SELECT 
         c.country_name,
-        COUNT(CASE WHEN t.title_type = 'SHOW' THEN 1 END) AS series_count,
+        COUNT(CASE WHEN t.title_type = 'SHOW' THEN 1 END) AS show_count
+    FROM 
+        titles t
+    JOIN 
+        titles_countries tc ON t.title_id = tc.title_id
+    JOIN 
+        countries c ON tc.country_id = c.country_id
+    GROUP BY 
+        c.country_name
+    ORDER BY 
+        show_count DESC
+    LIMIT 5;
+    """
+    return query
+
+def countryMovies():
+    query = """
+    SELECT 
+        c.country_name,
         COUNT(CASE WHEN t.title_type = 'MOVIE' THEN 1 END) AS movie_count
     FROM 
         titles t
@@ -310,32 +328,8 @@ def countryShows():
         countries c ON tc.country_id = c.country_id
     GROUP BY 
         c.country_name
-    HAVING 
-        series_count > movie_count
     ORDER BY 
-        series_count - movie_count DESC
-    LIMIT 5;
-    """
-    return query
-
-def countryMovies():
-    query = """
-    SELECT 
-        c.country_name,
-        COUNT(CASE WHEN t.title_type = 'MOVIE' THEN 1 END) AS movie_count,
-        COUNT(CASE WHEN t.title_type = 'SHOW' THEN 1 END) AS series_count
-    FROM 
-        titles t
-    JOIN 
-        titles_countries tc ON t.title_id = tc.title_id
-    JOIN 
-        countries c ON tc.country_id = c.country_id
-    GROUP BY 
-        c.country_name
-    HAVING 
-        movie_count > series_count
-    ORDER BY 
-        movie_count - series_count DESC
+        movie_count DESC
     LIMIT 5;
     """
     return query
@@ -377,5 +371,212 @@ def genreYear():
         tg.genre_id, g.genre_name, t.title_release_year
     ORDER BY 
         tg.genre_id, t.title_release_year;
+    """
+    return query
+
+def typePopularity():
+    query = """
+    SELECT title_type,
+        AVG(title_tmdb_popularity) AS avg_popularity
+    FROM titles
+    GROUP BY title_type;
+    """
+    return query
+
+def genrePopularityMovie():
+    query = """
+    WITH movie_genres AS (
+    SELECT t.title, g.genre_name, t.title_tmdb_popularity
+    FROM Titles t
+    JOIN titles_genres tg ON t.title_id = tg.title_id
+    JOIN Genres g ON tg.genre_id = g.genre_id
+    WHERE t.title_type = 'Movie'
+    )
+
+    SELECT genre_name, AVG(title_tmdb_popularity) AS average_popularity
+    FROM movie_genres
+    GROUP BY genre_name
+    ORDER BY average_popularity DESC
+    LIMIT 5;
+    """
+    return query
+
+def genrePopularityShow():
+    query = """
+    WITH movie_genres AS (
+    SELECT t.title, g.genre_name, t.title_tmdb_popularity
+    FROM Titles t
+    JOIN titles_genres tg ON t.title_id = tg.title_id
+    JOIN Genres g ON tg.genre_id = g.genre_id
+    WHERE t.title_type = 'Show'
+    )
+
+    SELECT genre_name, AVG(title_tmdb_popularity) AS average_popularity
+    FROM movie_genres
+    GROUP BY genre_name
+    ORDER BY average_popularity DESC
+    LIMIT 5;
+    """
+    return query
+
+def yearPopularity():
+    query = """
+    SELECT title_release_year, AVG(title_tmdb_popularity) AS avg_popularity
+    FROM titles
+    GROUP BY title_release_year
+    ORDER BY title_release_year;
+    """
+    return query
+
+def runtimePopularity():
+    query = """
+    SELECT title_runtime, AVG(title_tmdb_popularity) AS avg_popularity
+    FROM titles
+    GROUP BY title_runtime
+    ORDER BY title_runtime;
+    """
+    return query
+
+def yearRuntime():
+    query = """
+    SELECT title_release_year, AVG(title_runtime) AS avg_runtime
+    FROM titles
+    GROUP BY title_release_year
+    ORDER BY title_release_year;
+    """
+    return query
+
+def yearStreaming():
+    query = """
+    SELECT s.streaming_name, t.title_release_year
+    FROM streamings s
+    LEFT JOIN titles_streamings ts ON s.streaming_id = ts.streaming_id
+    LEFT JOIN titles t ON ts.title_id = t.title_id
+    ORDER BY s.streaming_name, t.title_release_year;
+    """
+    return query
+
+def probGenreScore():
+    query = """
+    WITH avg_scores AS (
+        SELECT g.genre_name, AVG((t.title_imdb_score + t.title_tmdb_score) / 2) AS avg_score
+        FROM titles t
+        JOIN titles_genres tg ON t.title_id = tg.title_id
+        JOIN genres g ON tg.genre_id = g.genre_id
+        GROUP BY g.genre_name
+    )
+    SELECT genre_name, COUNT(1) FILTER (WHERE avg_score >= 8 AND avg_score <= 10) / COUNT(1) AS probability
+    FROM avg_scores
+    GROUP BY genre_name
+    ORDER BY genre_name;
+    """
+    return query
+
+def bestDecadeMovie():
+    query = """
+    SELECT
+    title_release_year AS year,
+    COUNT(*) AS num_movies,
+    AVG(COALESCE(title_imdb_score, 0) + COALESCE(title_tmdb_score, 0)) AS avg_rating
+    FROM titles
+    WHERE title_type = 'MOVIE'
+    GROUP BY title_release_year
+    ORDER BY title_release_year;
+    """
+    return query
+
+def genreScorePopularity():
+    query = """
+    SELECT g.genre_name,
+        AVG(COALESCE(t.title_imdb_score, 0) + COALESCE(t.title_tmdb_score, 0)) AS avg_score,
+        AVG(t.title_tmdb_popularity) AS avg_popularity
+    FROM genres g
+    INNER JOIN titles_genres tg ON g.genre_id = tg.genre_id
+    INNER JOIN titles t ON tg.title_id = t.title_id
+    WHERE t.title_type = 'MOVIE'
+    GROUP BY g.genre_name;
+    """
+    return query
+
+def genreRestrictedQuantity():
+    query = """
+    SELECT g.genre_name,
+        COUNT(t.title_id) AS total_titles,  -- Added to count total titles per genre
+        COUNT(CASE WHEN a.age_name IN ('NC-17', 'TV-MA') THEN 1 END) AS restricted_titles_count
+    FROM titles t
+    JOIN titles_genres tg ON t.title_id = tg.title_id
+    JOIN genres g ON tg.genre_id = g.genre_id
+    JOIN titles_ages ta ON t.title_id = ta.title_id
+    JOIN ages a ON ta.age_id = a.age_id
+    GROUP BY g.genre_name
+    ORDER BY restricted_titles_count DESC
+    LIMIT 5;
+    """
+    return query
+
+def countryStreamingQuantity():
+    query = """
+    SELECT s.streaming_name,
+        COUNT(DISTINCT c.country_id) AS num_countries,
+        COUNT(*) AS num_titles
+    FROM streamings s
+    INNER JOIN titles_streamings ts ON s.streaming_id = ts.streaming_id
+    LEFT JOIN titles_countries tc ON ts.title_id = tc.title_id
+    LEFT JOIN countries c ON tc.country_id = c.country_id
+    GROUP BY s.streaming_name;
+    """
+    return query
+
+def moviesShows():
+    query = """
+    SELECT
+    title_type AS type,
+    COUNT(*) AS count
+    FROM titles
+    GROUP BY title_type;
+    """
+    return query
+
+def recommendation(type, age, genre, runtime, streaming, country, year):
+  query = """
+  SELECT t.title, AVG(COALESCE(t.title_imdb_score, 0) + COALESCE(t.title_tmdb_score, 0)) AS average_score
+  FROM titles t
+  INNER JOIN titles_genres tg ON t.title_id = tg.title_id
+  INNER JOIN genres g ON tg.genre_id = g.genre_id
+  INNER JOIN titles_ages ta ON t.title_id = ta.title_id
+  INNER JOIN ages a ON ta.age_id = a.age_id
+  INNER JOIN titles_countries tc ON t.title_id = tc.title_id
+  INNER JOIN countries c ON tc.country_id = c.country_id
+  INNER JOIN titles_streamings ts ON t.title_id = ts.title_id
+  INNER JOIN streamings s ON ts.streaming_id = s.streaming_id
+  WHERE t.title_type = %s
+  AND a.age_name = %s
+  AND g.genre_name = %s
+  AND t.title_runtime <= %s
+  AND s.streaming_name = %s
+  AND c.country_name = %s
+  AND t.title_release_year BETWEEN %s AND %s
+  GROUP BY t.title
+  ORDER BY average_score DESC;
+  """
+  return query
+
+def recommendationDefault():
+    query = """
+    (
+        SELECT title, title_type, title_release_year, title_imdb_score, title_tmdb_score
+        FROM titles
+        WHERE title_release_year = 2022 AND title_type = 'MOVIE'
+        ORDER BY title_imdb_score + title_tmdb_score DESC
+        LIMIT 5
+    )
+    UNION
+    (
+        SELECT title, title_type, title_release_year, title_imdb_score, title_tmdb_score
+        FROM titles
+        WHERE title_release_year = 2022 AND title_type = 'SHOW'
+        ORDER BY title_imdb_score + title_tmdb_score DESC
+        LIMIT 5
+    );
     """
     return query
